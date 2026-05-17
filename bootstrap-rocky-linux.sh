@@ -20,7 +20,7 @@ gpasswd -a admin wheel
 # --- GLOBAL VARIABLES ---
 # Open HTTP / HTTPS
 TCP_PORTS=( 80 443 )
-GO_VERSION="1.19.1"
+GO_VERSION="1.26.3"
 
 # --- ENVIRONMENT VARIABLES ---
 /bin/cat << EOM >> /home/admin/.bash_profile
@@ -57,6 +57,8 @@ esac
 
 # Install EPEL repo
 dnf install -y epel-release
+# Enable CRB (CodeReady Builder) repo; many EPEL packages depend on it on Rocky Linux 10
+dnf config-manager --set-enabled crb
 
 
 
@@ -264,11 +266,11 @@ echo "--- Setting Time Zone ---"
 echo "---------------------"
 # Set time zone
 timedatectl set-timezone $TIME_ZONE
-# Install ntp
-dnf install -y ntp
-# Start ntp
-systemctl enable ntpd
-systemctl start ntpd
+# Install chrony (the ntp package was removed from RHEL/Rocky 9+; chrony is the default time sync daemon on Rocky Linux 10)
+dnf install -y chrony
+# Start chrony
+systemctl enable chronyd
+systemctl start chronyd
 
 
 
@@ -451,7 +453,7 @@ rm -rf ddos-deflate-master
 
 echo "--- Installing CHKROOTKIT  ---"
 echo "------------------------------"
-wget -O /usr/local/src/chkrootkit.tar.gz ftp://ftp.pangeia.com.br/pub/seg/pac/chkrootkit.tar.gz
+wget -O /usr/local/src/chkrootkit.tar.gz https://www.chkrootkit.org/dl/chkrootkit.tar.gz
 tar -C /usr/local/src/ -zxvf /usr/local/src/chkrootkit.tar.gz
 mkdir /usr/local/chkrootkit
 mv -f /usr/local/src/chkrootkit*/* /usr/local/chkrootkit
@@ -528,8 +530,8 @@ echo 'net.ipv4.conf.default.send_redirects = 0' >> /etc/sysctl.conf
 
 echo "--- Modify SELinux to allow sshd to listen to new SSH port ---"
 echo "--------------------------------------------------------------"
-# Install semanage
-dnf install -y policycoreutils-python
+# Install semanage (renamed from policycoreutils-python in RHEL 8+)
+dnf install -y policycoreutils-python-utils
 # Allow SSH port
 semanage port -a -t ssh_port_t -p tcp $SSH_PORT
 
@@ -556,9 +558,6 @@ Port $SSH_PORT
 ## Sets listening address on server. default=0.0.0.0
 #ListenAddress 192.168.0.1
 
-## Enforcing SSH Protocol 2 only
-Protocol 2
-
 ## Disable direct root login, with no you need to login with admin user, then "su -" you into root
 PermitRootLogin no
 
@@ -570,12 +569,9 @@ PermitEmptyPasswords no
 PasswordAuthentication no
 
 # Enable 2FA
-ChallengeResponseAuthentication yes
+KbdInteractiveAuthentication yes
 UsePAM yes
 AuthenticationMethods publickey,password publickey,keyboard-interactive
-
-##
-UsePrivilegeSeparation yes
 
 ##
 AllowTcpForwarding yes
@@ -591,9 +587,6 @@ IgnoreRhosts yes
 
 ##
 HostbasedAuthentication no
-
-## RhostsAuthentication specifies whether sshd can try to use rhosts based authentication.
-RhostsRSAAuthentication no
 
 ## Enable / Disable sftp server
 Subsystem      sftp    /usr/libexec/openssh/sftp-server

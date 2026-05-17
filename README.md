@@ -2,7 +2,7 @@
 
 # Bootstrap / Harden Rocky Linux &middot; [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](./LICENSE)
 
-A bootstrapping / hardening Rocky Linux bash script. It is meant to be used on new systems. Tested on Rocky Linux 9.
+A bootstrapping / hardening Rocky Linux bash script. It is meant to be used on new systems. Tested on Rocky Linux 10.
 
 The motivation for this script is to easily serve up web servers / microservices.
 
